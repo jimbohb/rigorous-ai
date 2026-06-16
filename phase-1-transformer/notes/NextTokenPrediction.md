@@ -104,18 +104,47 @@ class LLM_Forward_Loss_Generator(nn.Module):
         return logits, loss
 ```
 
-### Training loop (in progress)
+### Data loading
+
+```python
+batch_size = 4   # sequences processed in parallel
+block_size = 8   # maximum context length
+
+def get_batch(split, train_data):
+    data = train_data if split == 'train' else val_data
+    ix = torch.randint(len(data) - block_size, (batch_size,))  # random start positions
+    x = torch.stack([data[i:i+block_size] for i in ix])        # input: (B, T)
+    y = torch.stack([data[i+1:i+block_size+1] for i in ix])    # target: shifted by 1
+    return x, y
+```
+
+Targets are the inputs shifted one position forward — each token predicts the next one.
+
+### Train / validation split
+
+```python
+n = int(0.9 * len(data))   # 90% train, 10% validation
+train_data = data[:n]
+val_data = data[n:]
+```
+
+### Training loop
 
 ```python
 optimizer = torch.optim.AdamW(network.parameters(), lr=1e-3)
 
-for steps in range(max_iters):
-    xb, yb = get_batch('train')       # input and target sequences
-    logits, loss = network(xb, yb)    # forward pass, compute loss
+batch_size = 32
+for steps in range(10000):
+    xb, yb = get_batch('train', train_data)   # input and target sequences
+    logits, loss = network(xb, yb)            # forward pass, compute loss
     optimizer.zero_grad(set_to_none=True)
-    loss.backward()                   # backpropagation — compute gradients
-    optimizer.step()                  # update embedding weights
+    loss.backward()                           # backpropagation — compute gradients
+    optimizer.step()                          # update embedding weights
+
+# final loss: ~0.965
 ```
+
+Loss dropped from ~4.24 (random) to ~0.965 after 10 000 steps.
 
 ### Generation (sampling)
 
@@ -131,3 +160,28 @@ def generate(self, idx, max_new_tokens):
 ```
 
 `torch.multinomial` picks a token randomly, weighted by probabilities. A token with probability 0.5 gets chosen roughly half the time. This produces varied output — always picking the highest probability (argmax) would cause the model to loop.
+
+### Verifying the learned pattern
+
+After training, 1000 tokens were generated and the bigram frequencies counted:
+
+```
+a   → 1000  (every token is 'a' in the simplified training data)
+ab  →  523  (≈ 50% ✓)
+ac  →  203  (≈ 20% ✓)
+ad  →   87  (≈ 10% ✓)
+ae  →    9  (≈ rare ✓)
+```
+
+The model learned the pattern from data — no pattern was hard-coded into the architecture.
+
+### Inspecting the learned weights
+
+After training, the embedding row for `'a'` (index 0) directly encodes the next-token distribution:
+
+```python
+w0 = network.token_embedding_table.weight.data[0]  # raw logits for 'a'
+sm = F.softmax(w0, dim=-1)                          # → probabilities
+```
+
+Plotting `sm` shows a bar chart with high values at indices for `'b'`, `'c'`, `'d'` and low values elsewhere — the probability table the model converged to matches the training distribution.
