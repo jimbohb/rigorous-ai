@@ -46,11 +46,12 @@ train_data = data[:n]
 val_data = data[n:]
 
 
-def mylog(self, event: str, indent=""):
+def mylog(self, event: str, indent="", name=None):
     global LogEnable
     if LogEnable:
+        label = name if name else type(self).__name__
         print(
-            f"{indent}{threading.get_native_id()}:{hex(id(self))}:{type(self).__name__}:{event}"
+            f"{indent}{threading.get_native_id()}:{hex(id(self))}:{label}:{event}"
         )
 
 
@@ -159,8 +160,20 @@ class Block(nn.Module):
 
     def forward(self, x, indent="\t"):
         mylog(self, "start", indent=indent)
-        x = x + self.sa(self.ln1(x))
-        x = x + self.ffwd(self.ln2(x))
+        mylog(self, "start", indent=indent + "\t", name="ln1")
+        normed = self.ln1(x)
+        mylog(self, "end", indent=indent + "\t", name="ln1")
+        sa_out = self.sa(normed)
+        mylog(self, "start", indent=indent + "\t", name="residual_add_1")
+        x = x + sa_out
+        mylog(self, "end", indent=indent + "\t", name="residual_add_1")
+        mylog(self, "start", indent=indent + "\t", name="ln2")
+        normed = self.ln2(x)
+        mylog(self, "end", indent=indent + "\t", name="ln2")
+        ffwd_out = self.ffwd(normed)
+        mylog(self, "start", indent=indent + "\t", name="residual_add_2")
+        x = x + ffwd_out
+        mylog(self, "end", indent=indent + "\t", name="residual_add_2")
         mylog(self, "end", indent=indent)
         return x
 
@@ -184,12 +197,22 @@ class BigramLanguageModel(nn.Module):
         B, T = idx.shape
 
         # idx and targets are both (B,T) tensor of integers
+        mylog(self, "start", "\t", name="token_embedding")
         tok_emb = self.token_embedding_table(idx)  # (B,T,C)
+        mylog(self, "end", "\t", name="token_embedding")
+        mylog(self, "start", "\t", name="position_embedding")
         pos_emb = self.position_embedding_table(torch.arange(T, device=device))  # (T,C)
+        mylog(self, "end", "\t", name="position_embedding")
+        mylog(self, "start", "\t", name="embedding_add")
         x = tok_emb + pos_emb  # (B,T,C)
+        mylog(self, "end", "\t", name="embedding_add")
         x = self.blocks(x)  # (B,T,C)
+        mylog(self, "start", "\t", name="ln_f")
         x = self.ln_f(x)  # (B,T,C)
+        mylog(self, "end", "\t", name="ln_f")
+        mylog(self, "start", "\t", name="lm_head")
         logits = self.lm_head(x)  # (B,T,vocab_size)
+        mylog(self, "end", "\t", name="lm_head")
 
         if targets is None:
             loss = None
