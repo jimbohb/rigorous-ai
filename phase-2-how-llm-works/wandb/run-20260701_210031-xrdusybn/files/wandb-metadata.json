@@ -1,0 +1,39 @@
+{
+  "os": "Linux-6.12.88-119.157.amzn2023.x86_64-x86_64-with-glibc2.35",
+  "python": "CPython 3.12.4",
+  "startedAt": "2026-07-01T21:00:31.966385Z",
+  "program": "rigorous-ai/phase-2-how-llm-works/01-fine-train-llm-training-api.ipynb",
+  "codePath": "rigorous-ai/phase-2-how-llm-works/01-fine-train-llm-training-api.ipynb",
+  "git": {
+    "remote": "git@github.com:jimbohb/rigorous-ai.git",
+    "commit": "9ac361ca48118f8d5f2d6781db7ab10031a69ff3"
+  },
+  "email": "horvath.balazs.hu@gmail.com",
+  "root": "/data/rigorous-ai/phase-2-how-llm-works",
+  "host": "r-jimbohb-jupyter-gpu-akv4twqk-9d946-hbw2g",
+  "executable": "/home/user/miniconda/bin/python",
+  "cpu_count": 24,
+  "cpu_count_logical": 48,
+  "gpu": "Tesla T4",
+  "gpu_count": 1,
+  "disk": {
+    "/": {
+      "total": "899424944128",
+      "used": "704291848192"
+    }
+  },
+  "memory": {
+    "total": "200454619136"
+  },
+  "gpu_nvidia": [
+    {
+      "name": "Tesla T4",
+      "memoryTotal": "16106127360",
+      "cudaCores": 2560,
+      "architecture": "Turing",
+      "uuid": "GPU-d360f73d-9621-3fb6-841d-01572b86b3fa"
+    }
+  ],
+  "cudaVersion": "13.0",
+  "writerId": "imav04on2a429jqq1cavsoq64qj9sutc"
+}
